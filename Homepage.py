@@ -109,13 +109,13 @@ def get_topic_from_question(question: str) -> str:
     return completion.choices[0].message.content
 
 
-def get_urls_using_metaphor(question) -> None:
+def get_urls_using_metaphor(question, num_results) -> None:
     metaphor = init_metaphor_instance()
     topic = get_topic_from_question(question)
     search_response = metaphor.search(
         topic,
         use_autoprompt=True,
-        num_results=NO_OF_RESULTS,
+        num_results=num_results or NO_OF_RESULTS,
         include_domains=['https://arxiv.org/']
     )
     return [result.url for result in search_response.results]
@@ -176,7 +176,7 @@ def custom_length_function(text):
 
 
 def create_chunks(contents: list, new_folder_path: str) -> list:
-    data_path = new_folder_path.joinpath('data.jsonl')
+    # data_path = new_folder_path.joinpath('data.jsonl')
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=100,
         chunk_overlap=10,
@@ -210,10 +210,11 @@ def create_conversation_chain(vectorstore):
     return conversation_chain
 
 
-def init_chatbot(question: str) -> None:
+def init_chatbot(question: str, num_results: str) -> None:
+    num_results = int(num_results)
     new_folder_path = init_folder(question)
     with st.spinner("Fetching relevant research papers..."):
-        urls = get_urls_using_metaphor(question)
+        urls = get_urls_using_metaphor(question, num_results)
         pdf_urls = [convert_url_to_pdf_url(url) for url in urls]
     with st.spinner("Extracting Content from the research papers..."):
         list_of_contents = extract_contents(pdf_urls, new_folder_path)
@@ -255,16 +256,26 @@ def main():
                 'Enter the topic you want to research about',
                 key='question'
             )
+            num_results = st.selectbox(
+                'Number of papers to retrieve',
+                (1,2,3,5,10),
+                key='num_results'
+            )
             # Every form must have a submit button.
             submitted = st.form_submit_button("Create Chatbot")
             if submitted:
-                init_chatbot(question)
+                init_chatbot(question, num_results)
+                st.session_state.messages = []
                 st.session_state.show_chatbot = True
 
     if st.session_state.show_chatbot:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
         if query := st.chat_input("Hi! I'm your AI Research Assistant. What can I help you with?"):
             st.session_state.messages.append(
-                {"role": "user", "content": query})
+                {"role": "user", "content": query}
+            )
             with st.chat_message("user"):
                 st.markdown(query)
 
@@ -280,14 +291,6 @@ def main():
                     'question': query
                 })
                 st.session_state.chat_history = response['chat_history']
-                # for response in openai.ChatCompletion.create(
-                #     model=st.session_state["openai_model"],
-                #     messages = messages,
-                #     temperature = 0,
-                #     stream=True,
-                # ):
-                #     full_response += response.choices[0].delta.get("content", "")
-                #     message_placeholder.markdown(full_response + "▌")
                 print(response)
                 full_response = response['chat_history'][-1].content
                 message_placeholder.markdown(full_response)
@@ -296,34 +299,6 @@ def main():
             )
     else:
         st.write("Enter your question in the sidebar to initialize the chat bot")
-        # for message in st.session_state.messages:
-        #     with st.chat_message(message["role"]):
-        #         st.markdown(message["content"])
-
-        # st.session_state.messages.append({"role": "user", "content": question})
-        # with st.chat_message("user"):
-        #     st.markdown(question)
-
-        # with st.chat_message("assistant"):
-        #     message_placeholder = st.empty()
-        #     full_response = ""
-        #     response = st.session_state.conversation_chain({
-        #         'question': question
-        #     })
-        #     st.session_state.chat_history = response['chat_history']
-        #     # for response in openai.ChatCompletion.create(
-        #     #     model=st.session_state["openai_model"],
-        #     #     messages=[
-        #     #         {"role": m["role"], "content": m["content"]}
-        #     #         for m in st.session_state.messages
-        #     #     ],
-        #     #     stream=True,
-        #     # ):
-        #     full_response += response['chat_history'][-1].content
-        #     message_placeholder.markdown(full_response + "▌")
-        #     message_placeholder.markdown(full_response)
-        # st.session_state.messages.append(
-        #     {"role": "assistant", "content": full_response})
 
 
 if __name__ == "__main__":
