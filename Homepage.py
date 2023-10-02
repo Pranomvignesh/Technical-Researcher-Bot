@@ -224,87 +224,107 @@ def init_chatbot(question: str) -> None:
         st.session_state.conversation_chain = create_conversation_chain(
             vectorstore)
 
-
 # Main Page UI
-st.title("""Technical Researcher Bot""")
-
-question = st.sidebar.text_input(
-    'Enter the question you want to research about',
-    key='question'
-)
 
 
-if 'conversation_chain' not in st.session_state:
-    st.session_state.conversation_chain = None
+def main():
+    st.title("""Technical Researcher Bot""")
 
-if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = OPENAI_MODEL
+    if 'conversation_chain' not in st.session_state:
+        st.session_state.conversation_chain = None
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    if "openai_model" not in st.session_state:
+        st.session_state["openai_model"] = OPENAI_MODEL
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = None
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-if question and st.session_state.conversation_chain is None:
-    init_chatbot(question)
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = None
 
-    if query := st.chat_input("Hi! I'm your AI Research Assistant. What can I help you with?"):
-        st.session_state.messages.append({"role": "user", "content": query})
-        with st.chat_message("user"):
-            st.markdown(query)
+    if "question" not in st.session_state:
+        st.session_state.question = ''
 
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            messages = [
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages[:-1]
-            ]
-            messages.append({"role": "user", "content": query})
-            response = st.session_state.conversation_chain({
-                'question': question
-            })
-            st.session_state.chat_history = response['chat_history']
-            # for response in openai.ChatCompletion.create(
-            #     model=st.session_state["openai_model"],
-            #     messages = messages,
-            #     temperature = 0,
-            #     stream=True,
-            # ):
-            #     full_response += response.choices[0].delta.get("content", "")
-            #     message_placeholder.markdown(full_response + "▌")
-            print(response)
-            full_response = response['chat_history'][-1].content
-            message_placeholder.markdown(full_response)
-        st.session_state.messages.append(
-            {"role": "assistant", "content": full_response})
+    if "show_chatbot" not in st.session_state:
+        st.session_state.show_chatbot = False
 
-    # for message in st.session_state.messages:
-    #     with st.chat_message(message["role"]):
-    #         st.markdown(message["content"])
+    # Use with sidebar here
+    with st.sidebar:
+        with st.form("my_form"):
+            question = st.text_input(
+                'Enter the topic you want to research about',
+                key='question'
+            )
+            # Every form must have a submit button.
+            submitted = st.form_submit_button("Create Chatbot")
+            if submitted:
+                init_chatbot(question)
+                st.session_state.show_chatbot = True
 
-    # st.session_state.messages.append({"role": "user", "content": question})
-    # with st.chat_message("user"):
-    #     st.markdown(question)
+    if st.session_state.show_chatbot:
+        if query := st.chat_input("Hi! I'm your AI Research Assistant. What can I help you with?"):
+            st.session_state.messages.append(
+                {"role": "user", "content": query})
+            with st.chat_message("user"):
+                st.markdown(query)
 
-    # with st.chat_message("assistant"):
-    #     message_placeholder = st.empty()
-    #     full_response = ""
-    #     response = st.session_state.conversation_chain({
-    #         'question': question
-    #     })
-    #     st.session_state.chat_history = response['chat_history']
-    #     # for response in openai.ChatCompletion.create(
-    #     #     model=st.session_state["openai_model"],
-    #     #     messages=[
-    #     #         {"role": m["role"], "content": m["content"]}
-    #     #         for m in st.session_state.messages
-    #     #     ],
-    #     #     stream=True,
-    #     # ):
-    #     full_response += response['chat_history'][-1].content
-    #     message_placeholder.markdown(full_response + "▌")
-    #     message_placeholder.markdown(full_response)
-    # st.session_state.messages.append(
-    #     {"role": "assistant", "content": full_response})
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_response = ""
+                messages = [
+                    {"role": m["role"], "content": m["content"]}
+                    for m in st.session_state.messages[:-1]
+                ]
+                messages.append({"role": "user", "content": query})
+                response = st.session_state.conversation_chain({
+                    'question': query
+                })
+                st.session_state.chat_history = response['chat_history']
+                # for response in openai.ChatCompletion.create(
+                #     model=st.session_state["openai_model"],
+                #     messages = messages,
+                #     temperature = 0,
+                #     stream=True,
+                # ):
+                #     full_response += response.choices[0].delta.get("content", "")
+                #     message_placeholder.markdown(full_response + "▌")
+                print(response)
+                full_response = response['chat_history'][-1].content
+                message_placeholder.markdown(full_response)
+            st.session_state.messages.append(
+                {"role": "assistant", "content": full_response}
+            )
+    else:
+        st.write("Enter your question in the sidebar to initialize the chat bot")
+        # for message in st.session_state.messages:
+        #     with st.chat_message(message["role"]):
+        #         st.markdown(message["content"])
+
+        # st.session_state.messages.append({"role": "user", "content": question})
+        # with st.chat_message("user"):
+        #     st.markdown(question)
+
+        # with st.chat_message("assistant"):
+        #     message_placeholder = st.empty()
+        #     full_response = ""
+        #     response = st.session_state.conversation_chain({
+        #         'question': question
+        #     })
+        #     st.session_state.chat_history = response['chat_history']
+        #     # for response in openai.ChatCompletion.create(
+        #     #     model=st.session_state["openai_model"],
+        #     #     messages=[
+        #     #         {"role": m["role"], "content": m["content"]}
+        #     #         for m in st.session_state.messages
+        #     #     ],
+        #     #     stream=True,
+        #     # ):
+        #     full_response += response['chat_history'][-1].content
+        #     message_placeholder.markdown(full_response + "▌")
+        #     message_placeholder.markdown(full_response)
+        # st.session_state.messages.append(
+        #     {"role": "assistant", "content": full_response})
+
+
+if __name__ == "__main__":
+    main()
