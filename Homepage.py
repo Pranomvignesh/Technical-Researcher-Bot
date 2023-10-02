@@ -261,7 +261,6 @@ def main():
                 (1,2,3,5,10),
                 key='num_results'
             )
-            # Every form must have a submit button.
             submitted = st.form_submit_button("Create Chatbot")
             if submitted:
                 init_chatbot(question, num_results)
@@ -299,6 +298,20 @@ def main():
             )
     else:
         st.write("Enter your question in the sidebar to initialize the chat bot")
+        
+        st.markdown("## Video Demo - 1")
+
+        video_file = open('assets/video-demos/streamlit-Homepage-2023-10-02-15-10-95.mp4', 'rb')
+        video_bytes = video_file.read()
+
+        st.video(video_bytes)
+        
+        st.markdown("## Video Demo - 2")
+
+        video_file = open('assets/video-demos/streamlit-Homepage-2023-10-02-16-10-66.webm', 'rb')
+        video_bytes = video_file.read()
+
+        st.video(video_bytes)
 
 
 if __name__ == "__main__":
