@@ -1,0 +1,7 @@
+metaphor_python
+openai
+requests 
+PyPDF2
+langchain
+tiktoken
+faiss-cpu
