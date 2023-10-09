@@ -29,7 +29,7 @@ st.set_page_config(
 )
 CACHE_FOLDER_PATH = Path('./cache').resolve()
 FOLDER_PREFIX = 'saved_searches'
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 METAPHOR_API_KEY = st.secrets["METAPHOR_API_KEY"]
 OPENAI_MODEL = 'gpt-3.5-turbo'
 NO_OF_RESULTS = 1
@@ -76,7 +76,7 @@ def init_folder(question: str) -> str:
 
 
 def get_topic_from_question(question: str) -> str:
-    openai.api_key = OPENAI_API_KEY
+    # openai.api_key = OPENAI_API_KEY
     SYSTEM_MESSAGE = """
     You are helpful assistant. You have to summarize the QUESTION asked by the user into a 
     TOPIC which can be used to retrieve technical papers.
@@ -97,7 +97,6 @@ def get_topic_from_question(question: str) -> str:
     You have to output like this
     Here is a paper about : Strategies for Preprocessing Natural Language Text
     """
-
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -105,7 +104,6 @@ def get_topic_from_question(question: str) -> str:
             {"role": "user", "content": question},
         ],
     )
-
     return completion.choices[0].message.content
 
 
@@ -213,17 +211,20 @@ def create_conversation_chain(vectorstore):
 def init_chatbot(question: str, num_results: str) -> None:
     num_results = int(num_results)
     new_folder_path = init_folder(question)
-    with st.spinner("Fetching relevant research papers..."):
-        urls = get_urls_using_metaphor(question, num_results)
-        pdf_urls = [convert_url_to_pdf_url(url) for url in urls]
-    with st.spinner("Extracting Content from the research papers..."):
-        list_of_contents = extract_contents(pdf_urls, new_folder_path)
-    with st.spinner("Preprocessing the Content..."):
-        chunks = create_chunks(list_of_contents, new_folder_path)
-    with st.spinner("Initializing the Chat Bot..."):
-        vectorstore = create_vectorstore(chunks)
-        st.session_state.conversation_chain = create_conversation_chain(
-            vectorstore)
+    try:
+        with st.spinner("Fetching relevant research papers..."):
+            urls = get_urls_using_metaphor(question, num_results)
+            pdf_urls = [convert_url_to_pdf_url(url) for url in urls]
+        with st.spinner("Extracting Content from the research papers..."):
+            list_of_contents = extract_contents(pdf_urls, new_folder_path)
+        with st.spinner("Preprocessing the Content..."):
+            chunks = create_chunks(list_of_contents, new_folder_path)
+        with st.spinner("Initializing the Chat Bot..."):
+            vectorstore = create_vectorstore(chunks)
+            st.session_state.conversation_chain = create_conversation_chain(
+                vectorstore)
+    except Exception as e:
+        st.write(f'{e.__class__.__name__} : {str(e)}')
 
 # Main Page UI
 
@@ -258,7 +259,7 @@ def main():
             )
             num_results = st.selectbox(
                 'Number of papers to retrieve',
-                (1,2,3,5,10),
+                (1, 2, 3, 5, 10),
                 key='num_results'
             )
             submitted = st.form_submit_button("Create Chatbot")
@@ -298,17 +299,19 @@ def main():
             )
     else:
         st.write("Enter your question in the sidebar to initialize the chat bot")
-        
+
         st.markdown("## Video Demo - 1")
 
-        video_file = open('assets/video-demos/streamlit-Homepage-2023-10-02-15-10-95.mp4', 'rb')
+        video_file = open(
+            'assets/video-demos/streamlit-Homepage-2023-10-02-15-10-95.mp4', 'rb')
         video_bytes = video_file.read()
 
         st.video(video_bytes)
-        
+
         st.markdown("## Video Demo - 2")
 
-        video_file = open('assets/video-demos/streamlit-Homepage-2023-10-02-16-10-66.webm', 'rb')
+        video_file = open(
+            'assets/video-demos/streamlit-Homepage-2023-10-02-16-10-66.webm', 'rb')
         video_bytes = video_file.read()
 
         st.video(video_bytes)
